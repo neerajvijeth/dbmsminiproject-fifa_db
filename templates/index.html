@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FIFA Database Manager</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .screen {
+            display: none;
+            width: 100%;
+            min-height: 100vh;
+            animation: fadeIn 0.5s;
+        }
+
+        .screen.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* WELCOME */
+        #welcome {
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background: linear-gradient(135deg, #0f3460 0%, #533483 100%);
+        }
+
+        .logo { font-size: 80px; margin: 20px; text-shadow: 0 0 20px #ffd700; }
+        .title { font-size: 48px; color: #ffd700; margin: 20px; }
+        .subtitle { font-size: 24px; color: #ddd; margin: 20px; }
+        
+        .btn-start {
+            padding: 15px 50px;
+            font-size: 20px;
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            color: #000;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-start:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(255, 215, 0, 0.6);
+        }
+
+        /* AUTH */
+        #auth {
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+        }
+
+        .auth-box {
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid #ffd700;
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .auth-title { font-size: 32px; color: #ffd700; margin-bottom: 30px; }
+        
+        .toggle { display: flex; gap: 10px; margin: 20px 0; }
+        .toggle-btn { background: transparent; border: 2px solid #ffd700; color: #ffd700; padding: 8px 15px; border-radius: 20px; cursor: pointer; }
+        .toggle-btn.active { background: #ffd700; color: #000; }
+
+        .form { display: none; }
+        .form.active { display: block; }
+
+        .form-group { margin: 20px 0; }
+        .form-group label { display: block; margin-bottom: 8px; }
+        .form-group input { width: 100%; padding: 12px; border: 2px solid #444; border-radius: 10px; background: rgba(0, 0, 0, 0.3); color: #fff; }
+        .form-group input:focus { outline: none; border-color: #ffd700; }
+
+        .btn { padding: 12px; background: linear-gradient(135deg, #ffd700, #ffed4e); color: #000; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; width: 100%; }
+        .btn:hover { transform: translateY(-2px); }
+
+        .error { color: #ff6b6b; margin: 10px 0; }
+        .success { color: #51cf66; margin: 10px 0; }
+
+        /* MENU */
+        #menu {
+            padding: 40px 20px;
+            justify-content: center;
+        }
+
+        .menu-header { text-align: center; margin-bottom: 50px; }
+        .menu-welcome { font-size: 28px; color: #ffd700; }
+
+        .logout { position: absolute; top: 20px; right: 20px; padding: 10px 20px; background: #ff6b6b; color: #fff; border: none; border-radius: 20px; cursor: pointer; }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 30px; max-width: 1000px; margin: 0 auto; }
+
+        .card {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 215, 0, 0.05));
+            border: 2px solid #ffd700;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(255, 215, 0, 0.3);
+        }
+
+        .card-icon { font-size: 48px; margin-bottom: 15px; color: #ffd700; }
+        .card-title { font-size: 24px; font-weight: bold; }
+
+        /* CONTENT */
+        #content {
+            padding: 40px 20px;
+        }
+
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .page-title { font-size: 32px; color: #ffd700; }
+
+        .btn-back { padding: 10px 20px; background: #444; color: #fff; border: none; border-radius: 10px; cursor: pointer; }
+        .btn-add { padding: 10px 20px; background: #51cf66; color: #fff; border: none; border-radius: 10px; cursor: pointer; }
+
+        .search { margin: 20px 0; }
+        .search input { width: 100%; padding: 12px; border: 2px solid #444; border-radius: 10px; background: rgba(0, 0, 0, 0.3); color: #fff; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        th {
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            color: #000;
+            padding: 15px;
+            text-align: left;
+            font-weight: bold;
+        }
+
+        td { padding: 12px 15px; border-bottom: 1px solid #444; }
+        tr:hover { background: rgba(255, 215, 0, 0.05); }
+
+        .actions { display: flex; gap: 10px; }
+        .btn-sm { padding: 6px 12px; border: none; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: bold; }
+        .btn-edit { background: #f39c12; color: #fff; }
+        .btn-delete { background: #e74c3c; color: #fff; }
+
+        .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-top: 20px; }
+        .item-card { background: rgba(0, 0, 0, 0.3); border: 2px solid #444; border-radius: 10px; padding: 20px; }
+        .item-card:hover { border-color: #ffd700; }
+
+        /* MODAL */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active { display: flex; }
+
+        .modal-content {
+            background: #1a1a2e;
+            border-radius: 15px;
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+            border: 2px solid #ffd700;
+            position: relative;
+        }
+
+        .modal-close { position: absolute; top: 15px; right: 15px; background: none; border: none; color: #ffd700; font-size: 28px; cursor: pointer; }
+        .modal-title { font-size: 24px; color: #ffd700; margin-bottom: 20px; }
+
+        .modal-buttons { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; }
+        .btn-cancel { padding: 10px 20px; background: #444; color: #fff; border: none; border-radius: 5px; cursor: pointer; }
+        .btn-submit { padding: 10px 20px; background: #51cf66; color: #fff; border: none; border-radius: 5px; cursor: pointer; }
+
+        /* TOAST */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 10px;
+            color: #fff;
+            font-weight: bold;
+            z-index: 2000;
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(400px); }
+            to { transform: translateX(0); }
+        }
+
+        .toast.success { background: #51cf66; }
+        .toast.error { background: #ff6b6b; }
+
+        select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff;
+            border: 2px solid #444;
+            margin-top: 5px;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #ffd700;
+        }
+    </style>
+</head>
+<body>
+
+<!-- WELCOME SCREEN -->
+<div id="welcome" class="screen active">
+    <div class="logo">⚽</div>
+    <h1 class="title">FIFA Database</h1>
+    <p class="subtitle">Football Team Management</p>
+    <button class="btn-start" id="startBtn">Press to Start</button>
+</div>
+
+<!-- AUTH SCREEN -->
+<div id="auth" class="screen">
+    <div class="auth-box">
+        <h2 class="auth-title">FIFA Account</h2>
+        <div class="toggle">
+            <button class="toggle-btn active" id="loginToggle">Login</button>
+            <button class="toggle-btn" id="signupToggle">Sign Up</button>
+        </div>
+
+        <!-- LOGIN FORM -->
+        <form class="form active" id="login-form">
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="login-username" required>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="login-password" required>
+            </div>
+            <button type="submit" class="btn">Login</button>
+            <div id="login-error" class="error"></div>
+        </form>
+
+        <!-- SIGNUP FORM -->
+        <form class="form" id="signup-form">
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="signup-username" required>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="signup-password" required>
+            </div>
+            <div class="form-group">
+                <label>Confirm Password</label>
+                <input type="password" id="signup-confirm" required>
+            </div>
+            <button type="submit" class="btn">Create Account</button>
+            <div id="signup-error" class="error"></div>
+            <div id="signup-success" class="success"></div>
+        </form>
+    </div>
+</div>
+
+<!-- MAIN MENU -->
+<div id="menu" class="screen">
+    <button class="logout" id="logoutBtn">Logout</button>
+    <div class="menu-header">
+        <h1 class="menu-welcome" id="welcome-msg">Welcome!</h1>
+    </div>
+    <div class="grid">
+        <div class="card" id="playersCard">
+            <div class="card-icon"><i class="fas fa-users"></i></div>
+            <div class="card-title">PLAYERS</div>
+        </div>
+        <div class="card" id="teamsCard">
+            <div class="card-icon"><i class="fas fa-shield-alt"></i></div>
+            <div class="card-title">TEAMS</div>
+        </div>
+        <div class="card" id="matchesCard">
+            <div class="card-icon"><i class="fas fa-trophy"></i></div>
+            <div class="card-title">MATCHES</div>
+        </div>
+        <div class="card" id="formationCard">
+            <div class="card-icon"><i class="fas fa-chess"></i></div>
+            <div class="card-title">FORMATION</div>
+        </div>
+    </div>
+</div>
+
+<!-- CONTENT SCREEN -->
+<div id="content" class="screen">
+    <div class="header">
+        <h2 class="page-title" id="page-title">Players</h2>
+        <div>
+            <button class="btn-add" id="add-btn">Add New</button>
+            <button class="btn-back" id="backBtn">Back</button>
+        </div>
+    </div>
+
+    <div class="search">
+        <input type="text" id="search-input" placeholder="Search...">
+    </div>
+
+    <div id="table-container"></div>
+    <div id="cards-container" class="cards-grid"></div>
+</div>
+
+<!-- MODALS -->
+<div id="player-modal" class="modal">
+    <div class="modal-content">
+        <button class="modal-close" id="closePlayerModal">&times;</button>
+        <h3 class="modal-title">Add Player</h3>
+        <form id="player-form">
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" id="player-name" required>
+            </div>
+            <div class="form-group">
+                <label>Nationality</label>
+                <input type="text" id="player-nationality" required>
+            </div>
+            <div class="form-group">
+                <label>Position</label>
+                <input type="text" id="player-position" required>
+            </div>
+            <div class="form-group">
+                <label>Overall Rating</label>
+                <input type="number" id="player-ovr" min="1" max="99" required>
+            </div>
+            <div class="modal-buttons">
+                <button type="button" class="btn-cancel" id="cancelPlayerBtn">Cancel</button>
+                <button type="submit" class="btn-submit">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="team-modal" class="modal">
+    <div class="modal-content">
+        <button class="modal-close" id="closeTeamModal">&times;</button>
+        <h3 class="modal-title">Add Team</h3>
+        <form id="team-form">
+            <div class="form-group">
+                <label>Team Name</label>
+                <input type="text" id="team-name" required>
+            </div>
+            <div class="form-group">
+                <label>Formation</label>
+                <select id="team-formation" required>
+                    <option value="">Select formation</option>
+                    <option>4-3-3</option>
+                    <option>4-2-3-1</option>
+                    <option>5-3-2</option>
+                    <option>3-5-2</option>
+                    <option>4-4-2</option>
+                </select>
+            </div>
+            <div class="modal-buttons">
+                <button type="button" class="btn-cancel" id="cancelTeamBtn">Cancel</button>
+                <button type="submit" class="btn-submit">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="match-modal" class="modal">
+    <div class="modal-content">
+        <button class="modal-close" id="closeMatchModal">&times;</button>
+        <h3 class="modal-title">Add Match</h3>
+        <form id="match-form">
+            <div class="form-group">
+                <label>Home Team</label>
+                <select id="match-home" required></select>
+            </div>
+            <div class="form-group">
+                <label>Away Team</label>
+                <select id="match-away" required></select>
+            </div>
+            <div class="modal-buttons">
+                <button type="button" class="btn-cancel" id="cancelMatchBtn">Cancel</button>
+                <button type="submit" class="btn-submit">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+const API = 'http://localhost:5050/api';
+const state = {
+    userId: null,
+    username: null,
+    players: [],
+    teams: [],
+    matches: [],
+    editingId: null
+};
+
+// INIT
+document.getElementById('startBtn').addEventListener('click', () => showScreen('auth'));
+document.getElementById('loginToggle').addEventListener('click', toggleLoginForm);
+document.getElementById('signupToggle').addEventListener('click', toggleSignupForm);
+document.getElementById('logoutBtn').addEventListener('click', logout);
+document.getElementById('backBtn').addEventListener('click', () => showScreen('menu'));
+
+document.getElementById('playersCard').addEventListener('click', () => showPage('players'));
+document.getElementById('teamsCard').addEventListener('click', () => showPage('teams'));
+document.getElementById('matchesCard').addEventListener('click', () => showPage('matches'));
+document.getElementById('formationCard').addEventListener('click', () => showPage('formation'));
+
+document.getElementById('login-form').addEventListener('submit', handleLogin);
+document.getElementById('signup-form').addEventListener('submit', handleSignup);
+document.getElementById('player-form').addEventListener('submit', handlePlayerSubmit);
+document.getElementById('team-form').addEventListener('submit', handleTeamSubmit);
+document.getElementById('match-form').addEventListener('submit', handleMatchSubmit);
+
+document.getElementById('closePlayerModal').addEventListener('click', () => closeModal('player-modal'));
+document.getElementById('closeTeamModal').addEventListener('click', () => closeModal('team-modal'));
+document.getElementById('closeMatchModal').addEventListener('click', () => closeModal('match-modal'));
+document.getElementById('cancelPlayerBtn').addEventListener('click', () => closeModal('player-modal'));
+document.getElementById('cancelTeamBtn').addEventListener('click', () => closeModal('team-modal'));
+document.getElementById('cancelMatchBtn').addEventListener('click', () => closeModal('match-modal'));
+
+document.getElementById('search-input').addEventListener('input', handleSearch);
+
+// FUNCTIONS
+function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+}
+
+function openModal(id) {
+    document.getElementById(id).classList.add('active');
+}
+
+function closeModal(id) {
+    document.getElementById(id).classList.remove('active');
+}
+
+function showToast(msg, type) {
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+
+function toggleLoginForm() {
+    document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.form').forEach(f => f.classList.remove('active'));
+    document.getElementById('loginToggle').classList.add('active');
+    document.getElementById('login-form').classList.add('active');
+}
+
+function toggleSignupForm() {
+    document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.form').forEach(f => f.classList.remove('active'));
+    document.getElementById('signupToggle').classList.add('active');
+    document.getElementById('signup-form').classList.add('active');
+}
+
+async function handleLogin(e) {
+    e.preventDefault();
+    const username = document.getElementById('login-username').value;
+    const password = document.getElementById('login-password').value;
+    
+    try {
+        const res = await fetch(`${API}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+            state.userId = data.userId;
+            state.username = data.username;
+            document.getElementById('welcome-msg').textContent = `Welcome, ${data.username}!`;
+            showScreen('menu');
+            document.getElementById('login-form').reset();
+        } else {
+            document.getElementById('login-error').textContent = data.message;
+        }
+    } catch (err) {
+        document.getElementById('login-error').textContent = 'Error connecting to server';
+    }
+}
+
+async function handleSignup(e) {
+    e.preventDefault();
+    const username = document.getElementById('signup-username').value;
+    const password = document.getElementById('signup-password').value;
+    const confirm = document.getElementById('signup-confirm').value;
+    
+    if (password !== confirm) {
+        document.getElementById('signup-error').textContent = 'Passwords do not match';
+        return;
+    }
+    
+    try {
+        const res = await fetch(`${API}/auth/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+            document.getElementById('signup-success').textContent = 'Account created! Switching to login...';
+            document.getElementById('signup-form').reset();
+            setTimeout(toggleLoginForm, 1500);
+        } else {
+            document.getElementById('signup-error').textContent = data.message;
+        }
+    } catch (err) {
+        document.getElementById('signup-error').textContent = 'Error';
+    }
+}
+
+function logout() {
+    state.userId = null;
+    state.username = null;
+    showScreen('welcome');
+}
+
+async function showPage(page) {
+    if (page === 'players') {
+        document.getElementById('page-title').textContent = 'Players';
+        document.getElementById('add-btn').onclick = () => {
+            state.editingId = null;
+            document.getElementById('player-form').reset();
+            document.querySelector('#player-modal .modal-title').textContent = 'Add Player';
+            openModal('player-modal');
+        };
+        loadPlayers();
+    } else if (page === 'teams') {
+        document.getElementById('page-title').textContent = 'Teams';
+        document.getElementById('add-btn').onclick = () => {
+            state.editingId = null;
+            document.getElementById('team-form').reset();
+            document.querySelector('#team-modal .modal-title').textContent = 'Add Team';
+            openModal('team-modal');
+        };
+        loadTeams();
+    } else if (page === 'matches') {
+        document.getElementById('page-title').textContent = 'Matches';
+        document.getElementById('add-btn').onclick = () => {
+            state.editingId = null;
+            document.getElementById('match-form').reset();
+            document.querySelector('#match-modal .modal-title').textContent = 'Add Match';
+            openModal('match-modal');
+        };
+        loadMatches();
+    } else if (page === 'formation') {
+        document.getElementById('page-title').textContent = 'Formation';
+        document.getElementById('add-btn').style.display = 'none';
+        loadFormation();
+    }
+    showScreen('content');
+}
+
+async function loadPlayers() {
+    try {
+        const res = await fetch(`${API}/players`);
+        state.players = await res.json();
+        renderPlayers(state.players);
+    } catch {
+        showToast('Error loading players', 'error');
+    }
+}
+
+function renderPlayers(players) {
+    const html = `
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Nationality</th>
+                    <th>Position</th>
+                    <th>OVR</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${players.map(p => `
+                    <tr>
+                        <td>${p.name}</td>
+                        <td>${p.nationality}</td>
+                        <td>${p.position}</td>
+                        <td>${p.ovr}</td>
+                        <td>
+                            <div class="actions">
+                                <button class="btn-sm btn-delete" onclick="deletePlayer(${p.player_id})">Delete</button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+    document.getElementById('table-container').innerHTML = html;
+    document.getElementById('cards-container').innerHTML = '';
+}
+
+async function handlePlayerSubmit(e) {
+    e.preventDefault();
+    const data = {
+        name: document.getElementById('player-name').value,
+        nationality: document.getElementById('player-nationality').value,
+        position: document.getElementById('player-position').value,
+        ovr: parseInt(document.getElementById('player-ovr').value)
+    };
+    
+    try {
+        const url = `${API}/players`;
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        if (res.ok) {
+            closeModal('player-modal');
+            showToast('Player added', 'success');
+            loadPlayers();
+        }
+    } catch (err) {
+        showToast('Error', 'error');
+    }
+}
+
+async function deletePlayer(id) {
+    if (confirm('Delete player?')) {
+        try {
+            await fetch(`${API}/players/${id}`, { method: 'DELETE' });
+            showToast('Deleted', 'success');
+            loadPlayers();
+        } catch {
+            showToast('Error', 'error');
+        }
+    }
+}
+
+async function loadTeams() {
+    try {
+        const res = await fetch(`${API}/teams?userId=${state.userId}`);
+        state.teams = await res.json();
+        renderTeams(state.teams);
+    } catch {
+        showToast('Error loading teams', 'error');
+    }
+}
+
+function renderTeams(teams) {
+    const html = teams.map(t => `
+        <div class="item-card">
+            <h3>${t.team_name}</h3>
+            <p><strong>Formation:</strong> ${t.formation}</p>
+            <button class="btn-sm btn-delete" onclick="deleteTeam(${t.team_id})">Delete</button>
+        </div>
+    `).join('');
+    
+    document.getElementById('table-container').innerHTML = '';
+    document.getElementById('cards-container').innerHTML = html;
+}
+
+async function handleTeamSubmit(e) {
+    e.preventDefault();
+    const data = {
+        team_name: document.getElementById('team-name').value,
+        formation: document.getElementById('team-formation').value,
+        user_id: state.userId
+    };
+    
+    try {
+        const res = await fetch(`${API}/teams`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        if (res.ok) {
+            closeModal('team-modal');
+            showToast('Team created', 'success');
+            loadTeams();
+        }
+    } catch (err) {
+        showToast('Error', 'error');
+    }
+}
+
+async function deleteTeam(id) {
+    if (confirm('Delete team?')) {
+        try {
+            await fetch(`${API}/teams/${id}`, { method: 'DELETE' });
+            showToast('Deleted', 'success');
+            loadTeams();
+        } catch {
+            showToast('Error', 'error');
+        }
+    }
+}
+
+async function loadMatches() {
+    try {
+        const res = await fetch(`${API}/matches`);
+        state.matches = await res.json();
+        renderMatches(state.matches);
+        loadTeamsForMatch();
+    } catch {
+        showToast('Error', 'error');
+    }
+}
+
+function renderMatches(matches) {
+    const html = matches.map(m => `
+        <div class="item-card">
+            <h3>${m.home_team_name} vs ${m.away_team_name}</h3>
+            <button class="btn-sm btn-delete" onclick="deleteMatch(${m.match_id})">Delete</button>
+        </div>
+    `).join('');
+    
+    document.getElementById('table-container').innerHTML = '';
+    document.getElementById('cards-container').innerHTML = html;
+}
+
+async function loadTeamsForMatch() {
+    const homeSelect = document.getElementById('match-home');
+    const awaySelect = document.getElementById('match-away');
+    
+    homeSelect.innerHTML = '<option value="">Select team</option>';
+    awaySelect.innerHTML = '<option value="">Select team</option>';
+    
+    state.teams.forEach(t => {
+        homeSelect.innerHTML += `<option value="${t.team_id}">${t.team_name}</option>`;
+        awaySelect.innerHTML += `<option value="${t.team_id}">${t.team_name}</option>`;
+    });
+}
+
+async function handleMatchSubmit(e) {
+    e.preventDefault();
+    const data = {
+        home_team_id: parseInt(document.getElementById('match-home').value),
+        away_team_id: parseInt(document.getElementById('match-away').value)
+    };
+    
+    try {
+        const res = await fetch(`${API}/matches`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        if (res.ok) {
+            closeModal('match-modal');
+            showToast('Match created', 'success');
+            loadMatches();
+        }
+    } catch (err) {
+        showToast('Error', 'error');
+    }
+}
+
+async function deleteMatch(id) {
+    if (confirm('Delete match?')) {
+        try {
+            await fetch(`${API}/matches/${id}`, { method: 'DELETE' });
+            showToast('Deleted', 'success');
+            loadMatches();
+        } catch {
+            showToast('Error', 'error');
+        }
+    }
+}
+
+function loadFormation() {
+    const html = `
+        <div style="margin: 30px 0;">
+            <label><strong>Select Team:</strong></label>
+            <select id="formation-select" onchange="showFormation()">
+                <option value="">Choose a team</option>
+                ${state.teams.map(t => `<option value="${t.team_id}">${t.team_name}</option>`).join('')}
+            </select>
+            <div id="formation-content"></div>
+        </div>
+    `;
+    document.getElementById('table-container').innerHTML = html;
+    document.getElementById('cards-container').innerHTML = '';
+}
+
+async function showFormation() {
+    const teamId = document.getElementById('formation-select').value;
+    if (!teamId) return;
+    
+    const team = state.teams.find(t => t.team_id === parseInt(teamId));
+    
+    try {
+        const res = await fetch(`${API}/teams/${teamId}/players`);
+        const players = await res.json();
+        
+        const html = `
+            <div style="margin: 20px 0;">
+                <h3>${team.team_name}</h3>
+                <p><strong>Formation:</strong> ${team.formation}</p>
+                <div style="background: rgba(0,0,0,0.3); border-radius: 10px; padding: 15px; margin-top: 15px;">
+                    ${players.length > 0 ? players.map(p => `
+                        <div style="padding: 10px; border-bottom: 1px solid #444;">
+                            <strong>${p.name}</strong> - ${p.position} (OVR: ${p.ovr})
+                        </div>
+                    `).join('') : '<p>No players</p>'}
+                </div>
+            </div>
+        `;
+        document.getElementById('formation-content').innerHTML = html;
+    } catch {
+        showToast('Error', 'error');
+    }
+}
+
+function handleSearch(e) {
+    const query = e.target.value.toLowerCase();
+    const filtered = state.players.filter(p => 
+        p.name.toLowerCase().includes(query) ||
+        p.nationality.toLowerCase().includes(query)
+    );
+    renderPlayers(filtered);
+}
+</script>
+</body>
+</html>
